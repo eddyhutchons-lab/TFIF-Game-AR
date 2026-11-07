@@ -116,12 +116,12 @@ const SET = {
   passcode: '',                                                  /* '' = no passcode screen */
   game: 'https://eddyhutchons-lab.github.io/TFIF-Game/?src=billboard',
   target: 'targets/billboard.mind',
-  version: '3',
+  version: '4',
   /* the run course: where the printed shelves are on the billboard (0..1 across, 0..1 down) */
   course: { aspect: 0.5, startU: 0.075, finishU: 0.875, charH: 0.20, ledges: [
     { u0: 0.030, u1: 0.360, v: 0.880 }, { u0: 0.360, u1: 0.560, v: 0.740 },
     { u0: 0.560, u1: 0.760, v: 0.600 }, { u0: 0.760, u1: 0.975, v: 0.460 } ] },
-  speed: 0.105,      /* board widths a second */
+  speed: 0.16,       /* board widths a second (0.105 felt slow) */
   jump: 0.56, gravity: 1.45
 };
 const CHAR_ORDER = ['carrot', 'avocado', 'cheese', 'mustard', 'ketchup', 'lasagna', 'mayo', 'milk', 'pickle', 'sriracha'];
@@ -267,7 +267,7 @@ function step(dt) {
   R.sx = 1 + sq; R.sy = 1 - sq + (R.on < 0 ? Math.min(0.08, Math.abs(R.vy) * 0.1) : 0);
   let fr;
   if (R.on < 0) fr = R.vy > 0 ? F.jump : F.fall;
-  else if (R.phase === 'run') fr = F.run[Math.floor(R.anim * 13) % F.run.length];
+  else if (R.phase === 'run') fr = F.run[Math.floor(R.anim * 18) % F.run.length];
   else fr = F.idle;
   setFrame(fr);
   if (R.on >= 0 && R.phase !== 'run') hero.scale.y *= 1 + Math.sin(R.anim * 5) * 0.015;
