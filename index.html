@@ -46,14 +46,14 @@
   #scan b{display:inline-block;margin-top:12px;background:var(--panel);padding:8px 16px;border-radius:999px;font-size:16px}
   @keyframes pulse{50%{opacity:.45;transform:scale(.985)}}
   /* the prompt sits beside the JUMP button, like a speech bubble pointing at it */
-  #say{left:auto;right:calc(var(--jb) + 34px + env(safe-area-inset-right));bottom:calc(18px + var(--jb) * .32 + env(safe-area-inset-bottom));text-align:right;opacity:0;transition:opacity .2s}
+  /* one message spot, a little below the middle of the screen, so the character stays in view */
+  #say{left:0;right:0;top:64%;bottom:auto;text-align:center;opacity:0;transition:opacity .2s}
+  /* phone sideways: the banner fills the middle, so the message sits low, between MOVE and JUMP, clear of the run */
+  @media (orientation:landscape){ #say{top:auto;left:calc(16px + var(--jb) * 2 + 20px);right:calc(16px + var(--jb) + 20px);bottom:calc(16px + var(--jb) * .28 + env(safe-area-inset-bottom))} }
   #say.on{opacity:1}
-  #say span{position:relative;display:inline-block;font-size:clamp(17px,3.6vmin,24px);line-height:1;color:#fff;padding:9px 16px;border-radius:999px;
-    background:var(--panel);border:3px solid #fff;box-shadow:0 4px 12px rgba(0,0,0,.35)}
-  #say span::after{content:"";position:absolute;right:-12px;top:50%;margin-top:-8px;border:8px solid transparent;border-left:10px solid #fff;border-right:0}
-  #say.center{right:0;left:0;bottom:auto;top:40%;text-align:center}
-  #say.center span{font-size:clamp(26px,7vmin,44px);background:linear-gradient(#ffc23d,#f08a00);text-shadow:0 2px 0 rgba(120,50,0,.6);box-shadow:0 5px 0 #a35600}
-  #say.center span::after{display:none}
+  #say span{position:relative;display:inline-block;font-size:clamp(15px,3.2vmin,21px);line-height:1;color:#fff;padding:7px 14px;border-radius:999px;
+    background:rgba(12,32,74,.78);border:2px solid rgba(255,255,255,.9);box-shadow:0 3px 10px rgba(0,0,0,.3)}
+  #say.center span{background:linear-gradient(rgba(255,194,61,.92),rgba(240,138,0,.92));text-shadow:0 2px 0 rgba(120,50,0,.6)}
   /* the JUMP button: bottom right, the same round orange button as the game */
   :root{--jb:clamp(74px,16vmin,104px)}
   #jump{position:fixed;z-index:6;right:calc(16px + env(safe-area-inset-right));bottom:calc(16px + env(safe-area-inset-bottom));width:var(--jb);height:var(--jb);
@@ -78,8 +78,6 @@
   @media (orientation:portrait){
     #sayL{left:calc(12px + env(safe-area-inset-left));bottom:calc(16px + var(--jb) + 2.4em + env(safe-area-inset-bottom))}
     #sayL span::after{left:calc(var(--jb) * 1.5 - 4px);top:auto;bottom:-12px;margin:0;border:8px solid transparent;border-top:10px solid #fff;border-bottom:0}
-    #say{right:calc(12px + env(safe-area-inset-right));bottom:calc(16px + var(--jb) + 2.4em + env(safe-area-inset-bottom))}
-    #say span::after{right:calc(var(--jb) * .5 - 8px);top:auto;bottom:-12px;margin:0;border:8px solid transparent;border-top:10px solid #fff;border-bottom:0}
   }
   #sayL span,#pad b{font-family:"KidsRock","Fredoka",sans-serif;font-weight:400;letter-spacing:.04em}
   /* stars collected, top left */
@@ -89,7 +87,7 @@
   #stars img{width:26px;height:26px}
   #stars.pop span{animation:pop .35s ease-out}
   @keyframes pop{40%{transform:scale(1.25)}}
-  #say.bounce span{animation:bounce .55s ease-in-out infinite}
+  #say.bounce span{animation:none}
   @keyframes bounce{50%{transform:translateY(-8px) scale(1.04)}}
   #timer{top:calc(12px + env(safe-area-inset-top));display:none}
   #timer.on{display:block}
@@ -160,19 +158,19 @@ const SET = {
   passcode: '',                                                  /* '' = no passcode screen */
   game: 'https://eddyhutchons-lab.github.io/TFIF-Game/?src=billboard',
   target: 'targets/banner.mind',      /* the final 6 m x 2 m banner (9 Nov) */
-  version: '8',
+  version: '10',
   /* the run course: where the printed shelves are on the banner (0..1 across, 0..1 down; v = top of the shelf).
      Measured from the final 6 m x 2 m artwork (3:1, trimmed at the crop marks) */
-  course: { aspect: 1 / 3, startU: 0.385, finishU: 0.918, charH: 0.20, ledges: [
+  course: { aspect: 1 / 3, startU: 0.39, finishU: 0.918, charH: 0.26, ledges: [
     { u0: 0.354, u1: 0.573, v: 0.882 }, { u0: 0.574, u1: 0.706, v: 0.741 },
     { u0: 0.708, u1: 0.839, v: 0.601 }, { u0: 0.841, u1: 0.983, v: 0.461 } ] },
   speed: 0.16,       /* board widths a second (0.105 felt slow) */
   jump: 0.56, gravity: 1.45,
   /* stars: across (u) and height above the shelf (in character heights). One on shelf 1, two on shelf 3;
      the last one sits high, so it takes a jump to get it */
-  stars: [{ u: 0.47, up: 0.55 }, { u: 0.742, up: 0.55 }, { u: 0.80, up: 1.2 }],
+  stars: [{ u: 0.47, up: 0.55 }, { u: 0.742, up: 0.55 }, { u: 0.765, up: 1.2 }],
   /* the ant walks up and down shelf 2 */
-  ant: { from: 0.615, to: 0.69, speed: 0.035, size: 0.55 }
+  ant: { from: 0.625, to: 0.685, speed: 0.035, size: 0.6 }
 };
 const CHAR_ORDER = ['carrot', 'avocado', 'cheese', 'mustard', 'ketchup', 'lasagna', 'mayo', 'milk', 'pickle', 'sriracha'];
 const $ = id => document.getElementById(id);
@@ -279,7 +277,8 @@ function setFrame(fr, flip = false) {
 const R = { phase: 'idle', x: 0, h: 0, vy: 0, on: 0, t: 0, anim: 0, sx: 1, sy: 1, waitT: 0, started: 0, time: 0, tracked: false, landT: 9 };
 function say(txt, bounce = false, center = false) { $('sayText').textContent = txt; $('say').classList.toggle('on', !!txt); $('say').classList.toggle('bounce', bounce); $('say').classList.toggle('center', center); }
 function hint(on) { $('jump').classList.toggle('hint', !!on); }
-function sayL(txt) { $('sayLText').textContent = txt; $('sayL').classList.toggle('on', !!txt); }
+let SL = false;   /* the MOVE reminder uses the same message spot */
+function sayL(txt) { if (txt) { say(txt); SL = true; } else if (SL) { if (/^Hold/.test($('sayText').textContent)) say(''); SL = false; } }
 function hintL(on) { $('right').classList.toggle('hint', !!on); }
 let starN = 0;
 function showStars() { $('starN').textContent = starN + '/' + STARS.length; }
@@ -311,7 +310,7 @@ function step(dt) {
   const halfW = CH * 0.18;
   if (R.phase === 'ready') {
     R.t += dt;
-    if (R.t > 0.3 && !$('sayL').classList.contains('on')) { sayL('Hold ▶ to move forward'); hintL(true); }
+    if (R.t > 0.3 && !SL) { sayL('Hold ▶ to move forward'); hintL(true); }
     if (K.right || K.left) { R.phase = 'run'; start(); }
   }
   if (R.phase === 'run') {
@@ -331,8 +330,8 @@ function step(dt) {
     if (R.waitT > 0.3 && $('sayText').textContent !== 'Press JUMP!') { say('Press JUMP!'); hint(true); }
     /* standing still for a while: remind them how to move */
     R.idleT = dir || R.on < 0 ? 0 : R.idleT + dt;
-    if (R.idleT > 3 && !atWall && !$('sayL').classList.contains('on')) { sayL('Hold ▶ to move forward'); hintL(true); }
-    if (dir > 0 && $('sayL').classList.contains('on')) { sayL(''); hintL(false); }
+    if (R.idleT > 3 && !atWall && !SL) { sayL('Hold ▶ to move forward'); hintL(true); }
+    if (dir > 0 && SL) { sayL(''); hintL(false); }
     R.walking = Math.abs(nx - R.x) > 1e-6 && R.bumpT <= 0;
     R.x = nx;
     if (R.x >= C.finishU && R.on === LED.length - 1) finish();
@@ -379,7 +378,7 @@ function hit(ax0, ax1, ay0, ay1) {   /* the character's box against another box 
 function stepThings(dt) {
   /* stars: spin, bob and get collected */
   for (const s of STARS) {
-    const L = LED[ledgeUnder(s.u)], cy = L.top + s.up * CH, r = CH * 0.16;
+    const L = LED[ledgeUnder(s.u)], cy = L.top + s.up * CH, r = CH * 0.19;
     s.t += dt;
     if (!s.got) {
       s.m.position.set(bx(s.u), by(cy + Math.sin(s.t * 3 + s.u * 20) * CH * 0.04), 0.006);
