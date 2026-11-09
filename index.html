@@ -159,19 +159,20 @@
 const SET = {
   passcode: '',                                                  /* '' = no passcode screen */
   game: 'https://eddyhutchons-lab.github.io/TFIF-Game/?src=billboard',
-  target: 'targets/billboard.mind',
-  version: '6',
-  /* the run course: where the printed shelves are on the billboard (0..1 across, 0..1 down) */
-  course: { aspect: 0.5, startU: 0.075, finishU: 0.875, charH: 0.20, ledges: [
-    { u0: 0.030, u1: 0.360, v: 0.880 }, { u0: 0.360, u1: 0.560, v: 0.740 },
-    { u0: 0.560, u1: 0.760, v: 0.600 }, { u0: 0.760, u1: 0.975, v: 0.460 } ] },
+  target: 'targets/banner.mind',      /* the final 6 m x 2 m banner (9 Nov) */
+  version: '8',
+  /* the run course: where the printed shelves are on the banner (0..1 across, 0..1 down; v = top of the shelf).
+     Measured from the final 6 m x 2 m artwork (3:1, trimmed at the crop marks) */
+  course: { aspect: 1 / 3, startU: 0.385, finishU: 0.918, charH: 0.20, ledges: [
+    { u0: 0.354, u1: 0.573, v: 0.882 }, { u0: 0.574, u1: 0.706, v: 0.741 },
+    { u0: 0.708, u1: 0.839, v: 0.601 }, { u0: 0.841, u1: 0.983, v: 0.461 } ] },
   speed: 0.16,       /* board widths a second (0.105 felt slow) */
   jump: 0.56, gravity: 1.45,
   /* stars: across (u) and height above the shelf (in character heights). One on shelf 1, two on shelf 3;
      the last one sits high, so it takes a jump to get it */
-  stars: [{ u: 0.22, up: 0.55 }, { u: 0.615, up: 0.55 }, { u: 0.695, up: 1.2 }],
+  stars: [{ u: 0.47, up: 0.55 }, { u: 0.742, up: 0.55 }, { u: 0.80, up: 1.2 }],
   /* the ant walks up and down shelf 2 */
-  ant: { from: 0.445, to: 0.53, speed: 0.035, size: 0.55 }
+  ant: { from: 0.615, to: 0.69, speed: 0.035, size: 0.55 }
 };
 const CHAR_ORDER = ['carrot', 'avocado', 'cheese', 'mustard', 'ketchup', 'lasagna', 'mayo', 'milk', 'pickle', 'sriracha'];
 const $ = id => document.getElementById(id);
@@ -179,6 +180,7 @@ const track = window.TFIF_TRACK || ((e, d) => console.log('[track]', e, d || {})
 const THREE = AFRAME.THREE;
 const C = SET.course, A = C.aspect, CH = C.charH * A;        /* character height in board widths */
 const LED = C.ledges.map(L => ({ ...L, top: (1 - L.v) * A }));
+const KS = A / 0.5;     /* movement was tuned on a 2:1 board; this keeps it the same relative to the character */
 let META = null, pick = null;
 try { pick = localStorage.getItem('gba-char'); } catch (e) {}
 
@@ -282,7 +284,7 @@ function hintL(on) { $('right').classList.toggle('hint', !!on); }
 let starN = 0;
 function showStars() { $('starN').textContent = starN + '/' + STARS.length; }
 function reset() {
-  Object.assign(R, { phase: 'appear', x: C.startU, h: LED[0].top, vy: 0, on: 0, t: 0, sx: 1, sy: 1, waitT: 0, idleT: 0, time: 0, landT: 9, bumpT: 0,
+  Object.assign(R, { phase: 'drop', x: C.startU, h: LED[0].top + 0.16 * KS, vy: 0, on: -1, t: 0, sx: 1, sy: 1, waitT: 0, idleT: 0, time: 0, landT: 9, bumpT: 0,
     antHint: false, squashed: false, started: 0, face: 1, moved: false });
   confetti.forEach(c => (c.m.visible = false));
   STARS.forEach(s => { s.got = false; s.t = 0; s.m.visible = true; s.m.material.opacity = 1; });
@@ -299,7 +301,7 @@ function tap() {
   if (!R.tracked) return;
   if ((R.phase === 'run' || R.phase === 'ready') && R.on >= 0) {
     if (R.phase === 'ready') { R.phase = 'run'; start(); }
-    R.vy = SET.jump; R.on = -1; blip(380, 980, 0.17); hint(false);
+    R.vy = SET.jump * KS; R.on = -1; blip(380, 980, 0.17); hint(false);
     if (!/ant/i.test($('sayText').textContent)) say('');
     track('jump');
   }
@@ -307,9 +309,6 @@ function tap() {
 function step(dt) {
   R.anim += dt; R.landT += dt;
   const halfW = CH * 0.18;
-  if (R.phase === 'appear') {            /* pops onto the first shelf, then waits for the player */
-    R.t += dt; if (R.t > 0.45) { R.phase = 'ready'; R.t = 0; }
-  }
   if (R.phase === 'ready') {
     R.t += dt;
     if (R.t > 0.3 && !$('sayL').classList.contains('on')) { sayL('Hold ▶ to move forward'); hintL(true); }
@@ -322,7 +321,7 @@ function step(dt) {
     if (R.bumpT > 0) dir = R.bumpT > 0.25 ? -0.35 : 0;      /* knocked back by the ant */
     else if (dir) R.face = dir;
     if (dir && !R.moved) { R.moved = true; sayL(''); hintL(false); }
-    let nx = R.x + dir * SET.speed * dt;
+    let nx = R.x + dir * SET.speed * KS * dt;
     /* a step up in the way: stop at it and ask for a jump */
     const i = ledgeUnder(R.x), nxt = LED[i + 1];
     let atWall = false;
@@ -338,21 +337,22 @@ function step(dt) {
     R.x = nx;
     if (R.x >= C.finishU && R.on === LED.length - 1) finish();
   }
-  if (R.phase === 'run' || R.phase === 'done') {
+  if (R.phase === 'drop' || R.phase === 'run' || R.phase === 'done') {
     /* walking off the end of a shelf: fall to the one below */
     if (R.on >= 0 && ledgeUnder(R.x) !== R.on) R.on = -1;
     /* falling and landing */
     if (R.on < 0) {
-      const prevH = R.h; R.vy -= SET.gravity * dt; R.h += R.vy * dt;
+      const prevH = R.h; R.vy -= SET.gravity * KS * dt; R.h += R.vy * dt;
       if (R.vy < 0) {
         const i = ledgeUnder(R.x), L = LED[i];
-        if (prevH >= L.top - 0.0001 && R.h <= L.top) { R.h = L.top; R.vy = 0; R.on = i; R.landT = 0; blip(220, 140, 0.08, 0.1, 'triangle'); }
+        if (prevH >= L.top - 0.0001 && R.h <= L.top) { R.h = L.top; R.vy = 0; R.on = i; R.landT = 0; blip(220, 140, 0.08, 0.1, 'triangle');
+          if (R.phase === 'drop') { R.phase = 'ready'; R.t = 0; } }   /* dropped in from above: now wait for the player */
         else if (R.h < L.top) { R.h = L.top; R.vy = 0; R.on = i; R.landT = 0; }
       }
     }
   }
   stepThings(dt);
-  if (R.phase === 'done') { R.t += dt; if (R.on >= 0 && R.t < 2.6 && R.anim % 0.6 < dt) { R.vy = 0.32; R.on = -1; } }
+  if (R.phase === 'done') { R.t += dt; if (R.on >= 0 && R.t < 2.6 && R.anim % 0.6 < dt) { R.vy = 0.32 * KS; R.on = -1; } }
   /* squash when landing, a little stretch in the air */
   const sq = R.landT < 0.3 ? 0.18 * Math.exp(-R.landT * 12) * Math.cos(R.landT * 30) : 0;
   R.sx = 1 + sq; R.sy = 1 - sq + (R.on < 0 ? Math.min(0.08, Math.abs(R.vy) * 0.1) : 0);
@@ -362,7 +362,6 @@ function step(dt) {
   else fr = F.idle;
   setFrame(fr, R.face < 0);
   if (R.on >= 0 && !(R.phase === 'run' && R.walking)) hero.scale.y *= 1 + Math.sin(R.anim * 5) * 0.015;
-  if (R.phase === 'appear') { const k = Math.min(1, R.t / 0.45), e = 1 + Math.sin(k * Math.PI) * 0.25; hero.scale.multiplyScalar(k * e); }
   hero.position.set(bx(R.x), by(R.h), 0.004);
   const L = LED[ledgeUnder(R.x)], air = Math.max(0, R.h - L.top);
   shadow.position.set(bx(R.x), by(L.top) + 0.002, 0.003);
@@ -398,23 +397,23 @@ function stepThings(dt) {
   const L2 = LED[1], aH = CH * SET.ant.size, aW = aH * 213 / 256;
   if (ANT.dead < 0) {
     if (R.bumpT <= 0) {
-      ANT.x += ANT.dir * SET.ant.speed * dt;
+      ANT.x += ANT.dir * SET.ant.speed * KS * dt;
       if (ANT.x < SET.ant.from) { ANT.x = SET.ant.from; ANT.dir = 1; } else if (ANT.x > SET.ant.to) { ANT.x = SET.ant.to; ANT.dir = -1; }
     }
     const t = R.anim;
     ANT.m.position.set(bx(ANT.x), by(L2.top) + Math.abs(Math.sin(t * 14)) * aH * 0.05, 0.005);
     ANT.m.scale.set(aW * (ANT.dir > 0 ? 1 : -1), aH, 1); ANT.m.rotation.z = Math.sin(t * 14) * 0.04;
     /* tell them what to do as they get close */
-    if (!R.antHint && R.on === 1 && ANT.x - R.x < 0.14 && ANT.x > R.x) { R.antHint = true; say('Jump on the ant!'); hint(true); }
+    if (!R.antHint && R.on === 1 && ANT.x - R.x < 0.14 * KS && ANT.x > R.x) { R.antHint = true; say('Jump on the ant!'); hint(true); }
     if (R.phase === 'run') {
       const top = L2.top + aH * 0.55;
       /* coming down anywhere near it counts as landing on it (generous, so it feels good) */
       /* a little help in the air: coming down near the ant, drift onto it */
-      if (R.on < 0 && R.vy < 0 && R.h < L2.top + aH * 1.6 && Math.abs(ANT.x - R.x) < 0.07) R.x += Math.sign(ANT.x - R.x) * Math.min(Math.abs(ANT.x - R.x), 0.09 * dt);
+      if (R.on < 0 && R.vy < 0 && R.h < L2.top + aH * 1.6 && Math.abs(ANT.x - R.x) < 0.07 * KS) R.x += Math.sign(ANT.x - R.x) * Math.min(Math.abs(ANT.x - R.x), 0.09 * KS * dt);
       const stomp = R.on < 0 && R.vy < 0 && Math.abs(R.x - ANT.x) < aW * 0.8 + CH * 0.15 && R.h < L2.top + aH * 1.3 && R.h > L2.top + aH * 0.15;
       if (stomp || hit(ANT.x - aW * 0.38, ANT.x + aW * 0.38, L2.top, top)) {
         if (stomp) {          /* landed on it: squashed */
-          ANT.dead = 0; R.vy = 0.42; R.on = -1; R.squashed = true; hint(false);
+          ANT.dead = 0; R.vy = 0.42 * KS; R.on = -1; R.squashed = true; hint(false);
           say('SQUASHED!', false, true); setTimeout(() => { if ($('sayText').textContent === 'SQUASHED!') say(''); }, 800);
           blip(300, 60, 0.25, 0.2, 'sawtooth'); track('ant_squashed');
         } else if (R.on >= 0 && R.bumpT <= 0) {           /* walked into it: a gentle bump back */
@@ -435,7 +434,7 @@ function finish() {
   R.phase = 'done'; R.t = 0; say(''); sayL(''); hint(false); hintL(false); $('jump').classList.add('hide'); $('pad').classList.add('hide'); K.left = K.right = false;
   const t = R.time; track('finish', { char: pick, secs: +t.toFixed(1), stars: starN, ant: R.squashed });
   play('fanfare', 0.75); play('cheer', 0.6, 0.3);
-  const fx = bx(C.finishU), fy = by(LED[LED.length - 1].top + 0.13);
+  const fx = bx(C.finishU), fy = by(LED[LED.length - 1].top + 0.13 * KS);
   confetti.forEach((c, i) => { c.m.visible = true; c.m.position.set(fx + (Math.random() - 0.5) * 0.04, fy, 0.02 + Math.random() * 0.02);
     const a = Math.random() * Math.PI * 2, sp = 0.18 + Math.random() * 0.28; c.v.set(Math.cos(a) * sp, Math.abs(Math.sin(a)) * sp + 0.12, (Math.random() - 0.2) * 0.25);
     c.r.set(Math.random() * 9, Math.random() * 9, Math.random() * 9); });
