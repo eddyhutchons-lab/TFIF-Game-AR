@@ -10,7 +10,7 @@
 <style>
   @font-face{font-family:"KidsRock";src:url(assets/fonts/kidsrock.woff2) format("woff2");font-display:swap}
   @font-face{font-family:"Fredoka";font-weight:300 700;src:url(assets/fonts/fredoka.woff2) format("woff2");font-display:swap}
-  :root{ --ink:#141a33; --orange:#fdaa00; --orange2:#f08a00; --blue:#2f8cff; --panel:rgba(12,32,74,.92); }
+  :root{ --W:100vw; --H:100vh; --R:0deg; --ink:#141a33; --orange:#fdaa00; --orange2:#f08a00; --blue:#2f8cff; --panel:rgba(12,32,74,.92); }
   *{box-sizing:border-box}
   /* MindAR puts its camera <video> straight into <body>; the body must stay see-through */
   html{background:#000;height:100%;margin:0}
@@ -18,8 +18,11 @@
     font-family:"Fredoka",system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;
     -webkit-user-select:none;user-select:none;-webkit-tap-highlight-color:transparent}
   body > video{z-index:0 !important}
+  /* every button, card and message sits in #ui, which is turned to match how the phone is held (phones with auto-rotate off) */
+  #ui{position:fixed;left:50%;top:50%;width:var(--W);height:var(--H);transform:translate(-50%,-50%) rotate(var(--R));z-index:5;pointer-events:none}
+  #ui .card:not(.hide),#ui #jump:not(.hide),#ui #pad:not(.hide){pointer-events:auto}
   a-scene{position:fixed!important;inset:0;z-index:1}
-  .card{position:fixed;z-index:10;left:50%;top:50%;transform:translate(-50%,-50%);width:min(92vw,560px);max-height:92vh;overflow:auto;
+  .card{position:fixed;z-index:10;left:50%;top:50%;transform:translate(-50%,-50%);width:min(calc(var(--W) * .92),560px);max-height:calc(var(--H) * .92);overflow:auto;
     background:var(--panel);border:3px solid #fff;border-radius:26px;padding:20px 20px 18px;text-align:center;
     box-shadow:0 14px 40px rgba(0,0,0,.45);transition:opacity .25s, transform .25s}
   .card.hide{opacity:0;pointer-events:none;transform:translate(-50%,-46%) scale(.97)}
@@ -27,7 +30,7 @@
   .card h2{margin:6px 0 4px;font-size:21px;font-weight:700}
   .card p{margin:4px 0 12px;font-size:15px;line-height:1.35;opacity:.92}
   .chars{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:8px;margin:10px 0 14px}
-  .chars button{appearance:none;border:3px solid rgba(255,255,255,.25);background:rgba(255,255,255,.08);border-radius:16px;padding:6px 2px 4px;cursor:pointer;color:#fff;font-family:inherit;font-weight:600;font-size:min(10.5px,2.35vw);line-height:1.1;letter-spacing:0;white-space:nowrap;overflow:hidden}
+  .chars button{appearance:none;border:3px solid rgba(255,255,255,.25);background:rgba(255,255,255,.08);border-radius:16px;padding:6px 2px 4px;cursor:pointer;color:#fff;font-family:inherit;font-weight:600;font-size:min(10.5px,calc(var(--W) * .0235));line-height:1.1;letter-spacing:0;white-space:nowrap;overflow:hidden}
   .chars button img{display:block;height:58px;width:100%;object-fit:contain;margin-bottom:3px;pointer-events:none}
   .chars button[aria-pressed=true]{border-color:var(--orange);background:rgba(253,170,0,.22)}
   .btn{appearance:none;display:inline-block;text-decoration:none;border:3px solid #fff;border-radius:999px;padding:13px 26px;font-size:18px;line-height:1;letter-spacing:.03em;color:#fff;cursor:pointer;
@@ -41,15 +44,15 @@
   .hud{position:fixed;z-index:5;left:0;right:0;text-align:center;pointer-events:none}
   #scan{top:50%;transform:translateY(-50%);display:none}
   #scan.on{display:block}
-  #scan .frame{width:min(78vw,78vh*2);aspect-ratio:2/1;margin:0 auto;border:4px dashed rgba(255,255,255,.8);border-radius:18px;animation:pulse 1.6s ease-in-out infinite}
-  @media (orientation:landscape){ #sideways{display:none!important} }
+  #scan .frame{width:min(calc(var(--W) * .78),calc(var(--H) * 1.56));aspect-ratio:2/1;margin:0 auto;border:4px dashed rgba(255,255,255,.8);border-radius:18px;animation:pulse 1.6s ease-in-out infinite}
+  .land #sideways{display:none!important}
   #scan b{display:inline-block;margin-top:12px;background:var(--panel);padding:8px 16px;border-radius:999px;font-size:16px}
   @keyframes pulse{50%{opacity:.45;transform:scale(.985)}}
   /* the prompt sits beside the JUMP button, like a speech bubble pointing at it */
   /* one message spot, a little below the middle of the screen, so the character stays in view */
   #say{left:0;right:0;top:64%;bottom:auto;text-align:center;opacity:0;transition:opacity .2s}
   /* phone sideways: the banner fills the middle, so the message sits low, between MOVE and JUMP, clear of the run */
-  @media (orientation:landscape){ #say{top:auto;left:calc(16px + var(--jb) * 2 + 20px);right:calc(16px + var(--jb) + 20px);bottom:calc(16px + var(--jb) * .28 + env(safe-area-inset-bottom))} }
+  .land #say{top:auto;left:calc(16px + var(--jb) * 2 + 20px);right:calc(16px + var(--jb) + 20px);bottom:calc(16px + var(--jb) * .28 + env(safe-area-inset-bottom))}
   #say.on{opacity:1}
   #say span{position:relative;display:inline-block;font-size:clamp(15px,3.2vmin,21px);line-height:1;color:#fff;padding:7px 14px;border-radius:999px;
     background:rgba(12,32,74,.78);border:2px solid rgba(255,255,255,.9);box-shadow:0 3px 10px rgba(0,0,0,.3)}
@@ -75,10 +78,8 @@
   #sayL.on{opacity:1}
   #sayL span{position:relative;display:inline-block;font-size:clamp(17px,3.6vmin,24px);line-height:1;color:#fff;padding:9px 16px;border-radius:999px;background:var(--panel);border:3px solid #fff;box-shadow:0 4px 12px rgba(0,0,0,.35)}
   #sayL span::after{content:"";position:absolute;left:-12px;top:50%;margin-top:-8px;border:8px solid transparent;border-right:10px solid #fff;border-left:0}
-  @media (orientation:portrait){
-    #sayL{left:calc(12px + env(safe-area-inset-left));bottom:calc(16px + var(--jb) + 2.4em + env(safe-area-inset-bottom))}
-    #sayL span::after{left:calc(var(--jb) * 1.5 - 4px);top:auto;bottom:-12px;margin:0;border:8px solid transparent;border-top:10px solid #fff;border-bottom:0}
-  }
+  .port #sayL{left:calc(12px + env(safe-area-inset-left));bottom:calc(16px + var(--jb) + 2.4em + env(safe-area-inset-bottom))}
+  .port #sayL span::after{left:calc(var(--jb) * 1.5 - 4px);top:auto;bottom:-12px;margin:0;border:8px solid transparent;border-top:10px solid #fff;border-bottom:0}
   #sayL span,#pad b{font-family:"KidsRock","Fredoka",sans-serif;font-weight:400;letter-spacing:.04em}
   /* stars collected, top left */
   #stars{top:calc(12px + env(safe-area-inset-top));left:calc(12px + env(safe-area-inset-left));right:auto;text-align:left;display:none}
@@ -99,21 +100,20 @@
   .card h2{font-family:"KidsRock","Fredoka",sans-serif;font-weight:400;letter-spacing:.02em}
   #say span,.btn{font-family:"KidsRock","Fredoka",sans-serif;font-weight:400;letter-spacing:.04em}
   /* phones held sideways: everything on one screen */
-  @media (max-height:520px){
-    .card{padding:12px 16px 12px;border-radius:20px}
-    .card img.logo{width:150px;margin-bottom:0}
-    .card h2{font-size:17px;margin:2px 0}
-    .chars{grid-template-columns:repeat(10,minmax(0,1fr));gap:5px;margin:6px 0 10px}
-    .chars button{padding:4px 1px 3px;font-size:min(8.5px,1.1vw);border-radius:12px}
-    .chars button img{height:40px}
-    .card p{font-size:13px;margin:2px 0 8px}
-    #over img.hero{height:70px}
-    .big{font-size:28px}
-    .btn{padding:11px 22px;font-size:16px}
-  }
+  .short .card{padding:12px 16px 12px;border-radius:20px}
+  .short .card img.logo{width:150px;margin-bottom:0}
+  .short .card h2{font-size:17px;margin:2px 0}
+  .short .chars{grid-template-columns:repeat(10,minmax(0,1fr));gap:5px;margin:6px 0 10px}
+  .short .chars button{padding:4px 1px 3px;font-size:min(8.5px,calc(var(--W) * .011));border-radius:12px}
+  .short .chars button img{height:40px}
+  .short .card p{font-size:13px;margin:2px 0 8px}
+  .short #over img.hero{height:70px}
+  .short .big{font-size:28px}
+  .short .btn{padding:11px 22px;font-size:16px}
 </style>
 </head>
 <body>
+<div id="ui">
 
 <div id="lock" class="card hide">
   <img class="logo" src="assets/title.webp" alt="What's Cooking? 2: The Fridge Is Full">
@@ -149,7 +149,44 @@
 <div class="hud" id="stars"><span><img src="assets/star.webp" alt="">Stars <b id="starN">0/3</b></span></div>
 <div class="hud" id="timer"><span id="timerText">0.0s</span></div>
 <div id="dbg"></div>
+</div>
 
+<script>
+/* Phones with auto-rotate switched off keep the page upright even when the phone is turned sideways.
+   The motion sensor tells us how the phone is really held, and #ui is turned to match,
+   so MOVE, JUMP and the messages always sit the right way up. Phones that do rotate are left alone. */
+(function () {
+  const root = document.documentElement;
+  const iOS = /iP(hone|ad|od)/.test(navigator.userAgent) || (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
+  let held = 0, timer = null;
+  const screenAngle = () => {
+    const a = (screen.orientation && typeof screen.orientation.angle === 'number') ? screen.orientation.angle
+            : (typeof window.orientation === 'number' ? window.orientation : 0);
+    return ((a % 360) + 360) % 360;
+  };
+  function layout() {
+    const r = ((held - screenAngle()) % 360 + 360) % 360;
+    const turn = (r === 90 || r === 270) ? r : 0;
+    const side = turn !== 0, W = side ? innerHeight : innerWidth, H = side ? innerWidth : innerHeight;
+    root.style.setProperty('--W', W + 'px'); root.style.setProperty('--H', H + 'px'); root.style.setProperty('--R', turn + 'deg');
+    root.classList.toggle('land', W > H); root.classList.toggle('port', W <= H); root.classList.toggle('short', H <= 520);
+  }
+  const later = ms => { clearTimeout(timer); timer = setTimeout(layout, ms); };
+  addEventListener('devicemotion', e => {
+    const g = e.accelerationIncludingGravity; if (!g || g.x == null || g.y == null) return;
+    let x = g.x, y = g.y; if (iOS) { x = -x; y = -y; }          /* iPhones report the opposite way round */
+    let h = held;
+    if (Math.abs(x) > 4.5 && Math.abs(x) > Math.abs(y) * 1.4) h = x > 0 ? 90 : 270;
+    else if (Math.abs(y) > 4.5 && Math.abs(y) > Math.abs(x) * 1.4) h = 0;
+    if (h !== held) { held = h; later(650); }                  /* wait a moment: a phone that does rotate will have turned the page by then */
+  });
+  addEventListener('resize', () => later(120));
+  addEventListener('orientationchange', () => later(300));
+  if (screen.orientation && screen.orientation.addEventListener) screen.orientation.addEventListener('change', () => later(300));
+  window.askMotion = () => { try { if (typeof DeviceMotionEvent !== 'undefined' && typeof DeviceMotionEvent.requestPermission === 'function') DeviceMotionEvent.requestPermission().catch(() => {}); } catch (e) {} };
+  layout();
+})();
+</script>
 <script>
 (() => {
 'use strict';
@@ -158,7 +195,7 @@ const SET = {
   passcode: '',                                                  /* '' = no passcode screen */
   game: 'https://what-is-cooking.com/?src=billboard',
   target: 'targets/banner.mind',      /* the final 6 m x 2 m banner (9 Nov) */
-  version: '10',
+  version: '11',
   /* the run course: where the printed shelves are on the banner (0..1 across, 0..1 down; v = top of the shelf).
      Measured from the final 6 m x 2 m artwork (3:1, trimmed at the crop marks) */
   course: { aspect: 1 / 3, startU: 0.39, finishU: 0.918, charH: 0.26, ledges: [
@@ -494,6 +531,7 @@ function watchRotation() {
 /* ===================== screens ===================== */
 function showGate() { $('gate').classList.remove('hide'); }
 $('start').addEventListener('click', () => {
+  if (window.askMotion) window.askMotion();
   audio(); F = frames(pick); T(F.idle.src);
   const begin = () => {
     try { scene.systems['mindar-image-system'].start(); $('gate').classList.add('hide'); $('scan').classList.add('on'); track('camera_start', { char: pick }); }
